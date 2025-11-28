@@ -1,0 +1,1559 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Алихан — Портфолио</title>
+  <meta name="description" content="Портфолио игр — WebGL билды Unity, playable прямо в браузере." />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#fff7ed',
+              100: '#ffedd5',
+              200: '#fed7aa',
+              300: '#fdba74',
+              400: '#fb923c',
+              500: '#f97316',
+              600: '#ea580c',
+              700: '#c2410c',
+              800: '#9a3412',
+              900: '#7c2d12'
+            },
+            game: {
+              50: '#f9fafb',
+              100: '#f3f4f6',
+              200: '#e5e7eb',
+              300: '#d1d5db',
+              400: '#9ca3af',
+              500: '#6b7280',
+              600: '#4b5563',
+              700: '#374151',
+              800: '#1f2937',
+              900: '#111827'
+            },
+            neon: {
+              red: '#ff385c',
+              orange: '#ff7a2d',
+              yellow: '#ffd24a',
+              green: '#00f57e',
+              blue: '#3399ff',
+              purple: '#b76bff'
+            },
+            ui: {
+              dark: '#181920',
+              darker: '#0d0e15',
+              accent: '#6c5ce7',
+              success: '#00d26a',
+              warning: '#ffc107',
+              error: '#ff5252'
+            }
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'float': 'float 6s ease-in-out infinite',
+            'level-up': 'level-up 0.5s ease-out',
+            'button-glow': 'button-glow 1.5s ease-in-out infinite alternate',
+            'progress': 'progress 2s ease-in-out infinite',
+            'gamepad-pulse': 'gamepad-pulse 2s ease-in-out infinite'
+          },
+          keyframes: {
+            'float': {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-10px)' }
+            },
+            'level-up': {
+              '0%': { transform: 'scale(1)' },
+              '50%': { transform: 'scale(1.1)' },
+              '100%': { transform: 'scale(1)' }
+            },
+            'button-glow': {
+              '0%': { boxShadow: '0 0 5px rgba(255, 114, 82, 0.3)' },
+              '100%': { boxShadow: '0 0 15px rgba(255, 114, 82, 0.6)' }
+            },
+            'progress': {
+              '0%': { backgroundPosition: '0% 50%' },
+              '100%': { backgroundPosition: '100% 50%' }
+            },
+            'gamepad-pulse': {
+              '0%': { boxShadow: '0 0 0 0 rgba(108, 92, 231, 0.7)' },
+              '70%': { boxShadow: '0 0 0 10px rgba(108, 92, 231, 0)' },
+              '100%': { boxShadow: '0 0 0 0 rgba(108, 92, 231, 0)' }
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            heading: ['Clash Grotesk', 'Inter', 'sans-serif'],
+            pixel: ['"Press Start 2P"', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Clash+Grotesk:wght@400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --glow-intensity: 0.7;
+      --transition-speed: 0.3s;
+      --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+      --card-shadow-hover: 0 20px 30px -5px rgba(0, 0, 0, 0.5), 0 15px 25px -10px rgba(255, 114, 82, 0.4);
+    }
+    * {
+      transition: box-shadow var(--transition-speed) ease, transform var(--transition-speed) ease;
+    }
+    body {
+      background: linear-gradient(135deg, #0f121a 0%, #131723 100%), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="20" height="20" fill="%23171b27"/><rect x="20" width="20" height="20" fill="%23191d28"/><rect y="20" width="20" height="20" fill="%23191d28"/><rect x="20" y="20" width="20" height="20" fill="%23171b27"/></svg>');
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      overflow-x: hidden;
+      background-attachment: fixed;
+    }
+    /* Игровая сетка на фоне */
+    .game-grid {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+      opacity: 0.05;
+      background-image: 
+        linear-gradient(rgba(100, 100, 100, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(100, 100, 100, 0.1) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    /* Кнопки контроллера */
+    .controller-button {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+      position: relative;
+      box-shadow: 0 4px 8px rgba(108, 92, 231, 0.4);
+      animation: gamepad-pulse 2s infinite;
+    }
+    .controller-button::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 50%;
+    }
+    .game-iframe { 
+      width: 100%; 
+      height: 100%; 
+      border: 0;
+      background-color: #0d0e15;
+    }
+    .modal-bg { 
+      background: rgba(13, 14, 21, 0.88); 
+      backdrop-filter: blur(12px);
+      transition: opacity 0.3s ease;
+    }
+    .thumbnail-placeholder {
+      background: 
+        radial-gradient(circle at 20% 30%, rgba(108, 92, 231, 0.15), transparent 70%), 
+        linear-gradient(135deg, rgba(24, 25, 32, 0.9) 0%, rgba(18, 19, 28, 0.9) 100%);
+      background-size: 300% 300%;
+      animation: gradient-shift 12s ease infinite alternate;
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      color: #cbd5e1;
+      font-weight: 700; 
+      height: 200px; 
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      border: 2px solid rgba(108, 92, 231, 0.2);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      transition: all var(--transition-speed) ease;
+      border-image: linear-gradient(to right, #6c5ce7, #ff7a2d) 1;
+    }
+    .thumbnail-placeholder::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(108, 92, 231, 0.1) 0%, transparent 70%);
+      transform: rotate(30deg);
+    }
+    .thumbnail-placeholder::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(45deg, transparent, rgba(255, 118, 82, 0.05), transparent);
+    }
+    .game-card:hover .thumbnail-placeholder {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: var(--card-shadow-hover);
+      border-color: transparent;
+      border-image: linear-gradient(to right, #6c5ce7, #ff7a2d) 1;
+    }
+    .progress-bar {
+      height: 6px;
+      background-color: rgba(31, 41, 55, 0.6);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 10px;
+      position: relative;
+      border: 1px solid rgba(108, 92, 231, 0.2);
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(
+        90deg, 
+        #ff7a2d 0%, 
+        #6c5ce7 50%, 
+        #00d26a 100%
+      );
+      border-radius: 3px;
+      background-size: 200% 100%;
+      width: 0%;
+      transition: width 0.8s cubic-bezier(0.2, 0, 0.1, 1);
+      position: relative;
+      overflow: hidden;
+      animation: progress 2s linear infinite;
+    }
+    .progress-fill::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+      );
+      animation: progress-shine 2s infinite;
+    }
+    @keyframes progress-shine {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-right: 4px;
+      margin-bottom: 4px;
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.2s ease;
+    }
+    .badge:hover {
+      transform: scale(1.05);
+    }
+    .technology-badge {
+      background: linear-gradient(45deg, #333344, #222233);
+      color: #93c5fd;
+      border: 1px solid rgba(108, 92, 231, 0.4);
+    }
+    .genre-badge {
+      background: linear-gradient(45deg, #332244, #221133);
+      color: #c4b5fd;
+      border: 1px solid rgba(183, 107, 255, 0.4);
+    }
+    .status-badge {
+      background: linear-gradient(45deg, #113322, #0a2211);
+      color: #6ee7b7;
+      border: 1px solid rgba(0, 210, 110, 0.4);
+    }
+    .loader {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(249, 115, 22, 0.2);
+      border-radius: 50%;
+      border-top-color: #f97316;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .neon-glow {
+      position: relative;
+      overflow: hidden;
+    }
+    .neon-glow::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(45deg, #ff385c, #ff7a2d, #ffd24a, #00f57e, #3399ff, #b76bff);
+      background-size: 600% 600%;
+      animation: gradient-shift 12s ease infinite;
+      z-index: -1;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      filter: blur(15px);
+    }
+    .neon-glow:hover::before {
+      opacity: var(--glow-intensity);
+    }
+    .neon-glow::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      background: inherit;
+      z-index: -1;
+      background: linear-gradient(45deg, #ff7a2d, #6c5ce7);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      border-radius: inherit;
+      filter: blur(12px);
+    }
+    .neon-glow:hover::after {
+      opacity: 0.7;
+    }
+    .menu-link {
+      position: relative;
+      overflow: hidden;
+    }
+    .menu-link::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: linear-gradient(to right, #ff7a2d, #6c5ce7);
+      transition: width 0.3s ease;
+    }
+    .menu-link:hover::after {
+      width: 100%;
+    }
+    header {
+      background: rgba(13, 14, 21, 0.95) !important;
+      backdrop-filter: blur(15px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.25);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(to right, #00d26a, #6c5ce7, #ff7a2d);
+      z-index: 10;
+    }
+    header.scrolled {
+      transform: translateY(0);
+      box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(20px);
+    }
+    .modal-content {
+      background: linear-gradient(180deg, rgba(24, 25, 32, 0.95) 0%, rgba(18, 19, 28, 0.95) 100%);
+      border: 2px solid transparent;
+      border-image: linear-gradient(to bottom right, #ff7a2d, #6c5ce7, #00d26a) 1;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 
+                  0 0 30px rgba(255, 122, 45, 0.2);
+      backdrop-filter: blur(15px);
+      transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    .modal-content::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 122, 45, 0.05), transparent 70%);
+      transform: rotate(30deg);
+      z-index: -1;
+    }
+    #loadingOverlay {
+      background: rgba(18, 19, 28, 0.92);
+      backdrop-filter: blur(5px);
+    }
+    .game-card, .bg-space-800\/50, .bg-space-900\/60 {
+      transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+      will-change: transform, box-shadow;
+    }
+    .game-card:hover {
+      transform: translateY(-10px);
+      box-shadow: var(--card-shadow-hover);
+      border-color: transparent;
+      border-image: linear-gradient(to right, #6c5ce7, #ff7a2d) 1;
+    }
+    p, .text-slate-300, .text-slate-400 {
+      color: #cbd5e1 !important;
+      line-height: 1.7;
+      letter-spacing: -0.01em;
+    }
+    h1, h2, h3, h4 {
+      font-family: 'Clash Grotesk', 'Inter', sans-serif;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+    .section-title {
+      position: relative;
+      display: inline-block;
+      padding-bottom: 12px;
+    }
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 60px;
+      height: 4px;
+      background: linear-gradient(to right, #ff7a2d, #6c5ce7);
+      border-radius: 2px;
+    }
+    .card-hover {
+      transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    }
+    .card-hover:hover {
+      transform: translateY(-5px);
+    }
+    .feature-card {
+      border-radius: 20px;
+      border: 2px solid transparent;
+      border-image: linear-gradient(to right, rgba(108, 92, 231, 0.3), rgba(255, 122, 45, 0.3)) 1;
+      background: rgba(31, 41, 55, 0.2);
+      backdrop-filter: blur(10px);
+      transition: all 0.4s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(108, 92, 231, 0.08), transparent 70%);
+      transform: rotate(30deg);
+      z-index: -1;
+    }
+    .feature-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 122, 45, 0.3);
+      border-image: linear-gradient(to right, rgba(108, 92, 231, 0.7), rgba(255, 122, 45, 0.7)) 1;
+    }
+    @media (max-width: 768px) {
+      .modal-content {
+        width: 95vw !important;
+        height: 85vh !important;
+        margin: 0 auto;
+        border-radius: 20px;
+      }
+      .game-card {
+        transform: none !important;
+      }
+      .game-grid {
+        display: none;
+      }
+    }
+    .pulse-ring {
+      position: absolute;
+      border: 2px solid rgba(255, 114, 82, 0.5);
+      border-radius: 50%;
+      animation: pulse-ring 2s cubic-bezier(0.2, 0, 0.8, 1) infinite;
+      opacity: 0;
+    }
+    @keyframes pulse-ring {
+      0% {
+        transform: scale(0.8);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(2.5);
+        opacity: 0;
+      }
+    }
+    .hero-illustration {
+      position: relative;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+      border: 2px solid transparent;
+      border-image: linear-gradient(to right, #ff7a2d, #6c5ce7) 1;
+    }
+    .hero-illustration::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(45deg, rgba(108, 92, 231, 0.1), rgba(255, 122, 45, 0.1));
+      z-index: 1;
+    }
+    .hero-illustration::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle, transparent 60%, rgba(13, 14, 21, 0.9) 100%);
+      z-index: 2;
+    }
+    .game-element {
+      position: absolute;
+      opacity: 0.9;
+      animation: float 15s linear infinite;
+      z-index: 1;
+    }
+    .game-element:nth-child(odd) {
+      animation-direction: reverse;
+      animation-duration: 25s;
+    }
+    .game-element.star {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.8);
+      box-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+    }
+    .game-element.coin {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, #FFD700, #FFA500);
+      border: 1px solid rgba(255, 215, 0, 0.8);
+      box-shadow: 0 0 8px rgba(255, 215, 0, 0.7);
+    }
+    .game-element.powerup {
+      width: 16px;
+      height: 16px;
+      background: linear-gradient(45deg, #00d26a, #00a854);
+      border-radius: 3px;
+      box-shadow: 0 0 10px rgba(0, 210, 110, 0.7);
+    }
+    .button-primary {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(45deg, #ff7a2d, #6c5ce7);
+      box-shadow: 0 4px 15px rgba(255, 122, 45, 0.4);
+      border: none;
+      transition: all 0.3s ease;
+    }
+    .button-primary:hover {
+      box-shadow: 0 6px 20px rgba(255, 122, 45, 0.6);
+      transform: translateY(-2px);
+    }
+    .button-primary::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      transform: rotate(30deg);
+      transition: all 0.6s;
+    }
+    .button-primary:hover::after {
+      animation: shine 1.5s;
+    }
+    @keyframes shine {
+      0% { transform: rotate(30deg) translateX(-100%); }
+      100% { transform: rotate(30deg) translateX(100%); }
+    }
+    .section-divider {
+      height: 2px;
+      background: linear-gradient(to right, transparent, rgba(255, 122, 45, 0.7), transparent);
+      margin: 60px auto;
+      width: 80%;
+      border-radius: 1px;
+      box-shadow: 0 0 10px rgba(255, 122, 45, 0.3);
+    }
+    .contact-card {
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(5px);
+      position: relative;
+      overflow: hidden;
+    }
+    .contact-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(45deg, rgba(108, 92, 231, 0.05), transparent);
+      z-index: 0;
+    }
+    .contact-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(255, 122, 45, 0.4);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 0 15px rgba(255, 122, 45, 0.3);
+    }
+    .input-glow:focus {
+      box-shadow: 0 0 0 3px rgba(255, 122, 45, 0.4);
+      border-color: #ff7a2d;
+    }
+    /* Появление элементов при прокрутке */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .fade-in.appear {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .pixel-text {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.8rem;
+      letter-spacing: -0.5px;
+      text-transform: uppercase;
+      color: #ff7a2d;
+      margin-top: 10px;
+    }
+    .game-stats {
+      display: flex;
+      gap: 15px;
+      margin-top: 15px;
+      font-size: 0.85rem;
+    }
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: #94a3b8;
+    }
+    .stat-value {
+      font-weight: bold;
+      color: #e2e8f0;
+    }
+    .platform-icon {
+      font-size: 0.9rem;
+      margin-right: 4px;
+      color: #6c5ce7;
+    }
+    /* Геймификация навигации */
+    .nav-level {
+      position: relative;
+      display: inline-block;
+      margin-right: 15px;
+    }
+    .nav-level::after {
+      content: attr(data-level);
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #ff385c;
+      color: white;
+      font-size: 0.7rem;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-family: 'Press Start 2P', monospace;
+      box-shadow: 0 0 5px rgba(255, 56, 92, 0.8);
+    }
+    .level-indicator {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.75rem;
+      color: #ff7a2d;
+    }
+    .level-bar {
+      height: 6px;
+      background: rgba(255, 122, 45, 0.2);
+      border-radius: 3px;
+      flex: 1;
+      overflow: hidden;
+    }
+    .level-fill {
+      height: 100%;
+      width: 75%;
+      background: linear-gradient(to right, #ff7a2d, #ffd24a);
+      border-radius: 3px;
+    }
+    .xp-badge {
+      background: rgba(108, 92, 231, 0.2);
+      border: 1px solid rgba(108, 92, 231, 0.4);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      color: #c4b5fd;
+    }
+    .achievement-card {
+      background: rgba(31, 41, 55, 0.3);
+      border: 1px solid rgba(108, 92, 231, 0.3);
+      border-radius: 12px;
+      padding: 12px;
+      margin: 8px 0;
+      transition: all 0.3s ease;
+    }
+    .achievement-card:hover {
+      background: rgba(108, 92, 231, 0.1);
+      border-color: rgba(108, 92, 231, 0.6);
+      transform: translateX(5px);
+    }
+    .achievement-icon {
+      font-size: 1.2rem;
+      margin-right: 10px;
+      color: #6c5ce7;
+    }
+    .achievement-title {
+      font-weight: bold;
+      color: #e2e8f0;
+    }
+    .achievement-desc {
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-b from-ui-darker to-ui-dark text-slate-200 antialiased leading-relaxed">
+  <div class="game-grid"></div>
+  <header class="bg-ui-darker/90 backdrop-blur-xl border-b border-slate-800 sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-neon-purple to-neon-blue flex items-center justify-center text-white font-bold text-xl shadow-[0_0_20px_rgba(108,92,231,0.5)] border border-purple-500/30 relative overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-r from-purple-400 to-blue-400 opacity-20 animate-pulse"></div>
+          <span class="relative z-10 animate-float font-[Clash Grotesk] font-bold flex items-center justify-center">
+            <i class="fas fa-gamepad text-xl"></i>
+          </span>
+        </div>
+        <div>
+          <h1 class="text-xl md:text-2xl font-extrabold bg-gradient-to-r from-slate-100 to-neon-orange bg-clip-text text-transparent">Алихан — Портфолио</h1>
+          <p class="text-sm text-slate-400 mt-0.5 flex items-center gap-2">
+            <span class="level-indicator">
+              <span id="ageLevel">Level 14</span>
+            </span>
+          </p>
+        </div>
+      </div>
+      <nav class="hidden md:flex gap-8 items-center">
+        <a href="#games" class="menu-link text-sm font-medium text-slate-300 hover:text-neon-orange transition-colors duration-200">Игры</a>
+        <a href="#about" class="menu-link text-sm font-medium text-slate-300 hover:text-neon-orange transition-colors duration-200">О проектах</a>
+        <a href="#contact" class="menu-link text-sm font-medium text-slate-300 hover:text-neon-orange transition-colors duration-200">Контакты</a>
+      </nav>
+      <div class="md:hidden">
+        <button id="openMenu" class="p-2.5 rounded-xl text-slate-300 hover:bg-slate-800 hover:text-neon-orange transition-all duration-200">
+          <i class="fas fa-bars text-xl"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-16">
+<!-- Games grid -->
+<section id="games" class="mb-24 fade-in">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-10">
+    <div>
+      <h3 class="section-title text-3xl font-bold bg-gradient-to-r from-slate-100 to-neon-orange bg-clip-text text-transparent mb-2">Мои игры</h3>
+      <p class="text-slate-400 mt-1">Полный список проектов, над которыми я работал</p>
+    </div>
+    <div class="flex items-center gap-3 mt-6 sm:mt-0">
+      <div class="relative">
+        <i class="fas fa-search absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
+        <input type="text" id="gameSearch" placeholder="Поиск игр..." class="input-glow pl-10 pr-4 py-2.5 bg-ui-dark/60 border border-slate-700 rounded-xl focus:ring-2 focus:ring-neon-orange/50 focus:border-neon-orange outline-none transition-all duration-200 w-48 sm:w-64 text-slate-200 placeholder-slate-500 backdrop-blur-sm">
+      </div>
+    </div>
+  </div>
+  <!-- Игры для запуска в браузере -->
+  <div class="mb-12">
+    <h4 class="text-xl font-bold text-slate-100 mb-6 flex items-center gap-3">
+      <i class="fas fa-play-circle text-neon-green"></i>
+      Доступны для игры в браузере
+    </h4>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 relative" id="webglGamesContainer">
+      <!-- Карточка игры 2 (WebGL) -->
+      <article class="game-card bg-gradient-to-br from-ui-dark/60 to-ui-darker/80 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden flex flex-col border border-slate-700/30 relative group">
+        <div class="relative overflow-hidden">
+          <div class="thumbnail-placeholder">
+            <div class="absolute inset-0 flex items-center justify-center">
+              <i class="fas fa-robot text-6xl text-neon-blue/80"></i>
+            </div>
+            <div class="absolute top-4 right-4 bg-amber-900/30 text-neon-yellow px-3 py-1 rounded-full text-xs font-medium border border-amber-500/30 backdrop-blur-sm">
+              2022
+            </div>
+          </div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-5">
+            <button class="play-btn w-full px-5 py-3 bg-gradient-to-r from-neon-green to-neon-blue text-white font-medium rounded-xl shadow-lg hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-2" data-src="/PortfolioGame2/index.html">
+              <i class="fas fa-play"></i> Запустить игру
+            </button>
+          </div>
+        </div>
+        <div class="p-6 flex flex-col flex-1">
+          <div class="flex items-start justify-between mb-3">
+            <h4 class="font-bold text-xl text-slate-100">Neon Colossus</h4>
+            <span class="text-xs px-2.5 py-1 bg-blue-900/30 text-neon-blue rounded-full font-medium border border-blue-500/30 backdrop-blur-sm">Аркада</span>
+          </div>
+          <p class="text-slate-300 mb-5 flex-1">Киберпанковая аркада с головокружительными скоростями, неоновой графикой и динамичным саундтреком. Навигация по цифровым лабиринтам с элементами головоломок.</p>
+          <div class="flex flex-wrap gap-2 mb-5">
+            <span class="badge genre-badge">Аркада</span>
+            <span class="badge genre-badge">Киберпанк</span>
+            <span class="badge technology-badge">Shader Effects</span>
+            <span class="badge technology-badge">GLSL</span>
+          </div>
+          <div class="mb-4">
+            <div class="flex justify-between text-xs text-slate-400 mb-1.5">
+              <span>Прогресс разработки</span>
+              <span>100%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 100%;"></div>
+            </div>
+          </div>
+          <div class="game-stats">
+            <div class="stat">
+              <i class="fas fa-trophy platform-icon"></i>
+              <span class="stat-value">12</span> достижений
+            </div>
+            <div class="stat">
+              <i class="fas fa-user platform-icon"></i>
+              <span class="stat-value">4.8</span> рейтинг
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+  <!-- Игры со ссылками на магазины -->
+  <div>
+    <h4 class="text-xl font-bold text-slate-100 mb-6 flex items-center gap-3">
+      <i class="fas fa-store text-neon-orange"></i>
+      Другие проекты
+    </h4>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 relative" id="storeGamesContainer">
+      <!-- Карточка игры 1 (Ссылки) -->
+      <article class="game-card bg-gradient-to-br from-ui-dark/60 to-ui-darker/80 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden flex flex-col border border-slate-700/30 relative group">
+        <div class="relative overflow-hidden">
+          <div class="thumbnail-placeholder">
+            <div class="absolute inset-0 flex items-center justify-center">
+              <i class="fas fa-dungeon text-6xl text-neon-orange/80"></i>
+            </div>
+            <div class="absolute top-4 right-4 bg-amber-900/30 text-neon-yellow px-3 py-1 rounded-full text-xs font-medium border border-amber-500/30 backdrop-blur-sm">
+              2023
+            </div>
+          </div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-5">
+            <div class="w-full flex flex-col sm:flex-row gap-3">
+              <a href="https://store.steampowered.com/app/123456/" target="_blank" class="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-800 text-white font-medium rounded-xl hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-2">
+                <i class="fab fa-steam"></i> Steam
+              </a>
+              <a href="https://itch.io/games/kuatov2002" target="_blank" class="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-red-800 text-white font-medium rounded-xl hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-2">
+                <i class="fab fa-itch-io"></i> itch.io
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="p-6 flex flex-col flex-1">
+          <div class="flex items-start justify-between mb-3">
+            <h4 class="font-bold text-xl text-slate-100">Dungeon Delver</h4>
+            <span class="text-xs px-2.5 py-1 bg-purple-900/30 text-neon-purple rounded-full font-medium border border-purple-500/30 backdrop-blur-sm">Рогалик</span>
+          </div>
+          <p class="text-slate-300 mb-5 flex-1">Рогалик с процедурно генерируемыми подземельями, 7 уникальными персонажами и динамической боевой системой с элементами кастомизации оружия.</p>
+          <div class="flex flex-wrap gap-2 mb-5">
+            <span class="badge genre-badge">Рогалик</span>
+            <span class="badge genre-badge">Экшен</span>
+            <span class="badge technology-badge">Unity 2021</span>
+            <span class="badge technology-badge">Procedural</span>
+          </div>
+          <div class="mb-4">
+            <div class="flex justify-between text-xs text-slate-400 mb-1.5">
+              <span>Прогресс разработки</span>
+              <span>85%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 85%"></div>
+            </div>
+          </div>
+          <div class="game-stats">
+            <div class="stat">
+              <i class="fas fa-keyboard platform-icon"></i>
+              <span class="stat-value">PC</span> платформы
+            </div>
+            <div class="stat">
+              <i class="fas fa-users platform-icon"></i>
+              <span class="stat-value">1.2K</span> игроки
+            </div>
+          </div>
+        </div>
+      </article>
+      <!-- Карточка игры 3 (Ссылки) -->
+      <article class="game-card bg-gradient-to-br from-ui-dark/60 to-ui-darker/80 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden flex flex-col border border-slate-700/30 relative group">
+        <div class="relative overflow-hidden">
+          <div class="thumbnail-placeholder">
+            <div class="absolute inset-0 flex items-center justify-center">
+              <i class="fas fa-puzzle-piece text-6xl text-neon-purple/80"></i>
+            </div>
+            <div class="absolute top-4 right-4 bg-amber-900/30 text-neon-yellow px-3 py-1 rounded-full text-xs font-medium border border-amber-500/30 backdrop-blur-sm">
+              2023
+            </div>
+          </div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-5">
+            <div class="w-full flex flex-col sm:flex-row gap-3">
+              <a href="https://play.google.com/store/apps/details?id=com.omnium.kamikaze" target="_blank" class="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-green-800 text-white font-medium rounded-xl hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-2">
+                <i class="fab fa-google-play"></i> Google Play
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="p-6 flex flex-col flex-1">
+          <div class="flex items-start justify-between mb-3">
+            <h4 class="font-bold text-xl text-slate-100">World of Drones</h4>
+            <span class="text-xs px-2.5 py-1 bg-indigo-900/30 text-neon-purple rounded-full font-medium border border-indigo-500/30 backdrop-blur-sm">Симулятор</span>
+          </div>
+          <p class="text-slate-300 mb-5 flex-1">Возьми под свой контроль современный боевой дрон-камикадзе и погрузись в атмосферу напряжённых тактических воздушных боёв. В этой игре каждая миссия - это проверка твоей скорости, точности и стратегического мышления.</p>
+          <div class="flex flex-wrap gap-2 mb-5">
+            <span class="badge genre-badge">Симулятор</span>
+            <span class="badge genre-badge">Военный</span>
+            <span class="badge technology-badge">Mobile</span>
+          </div>
+          <div class="mb-4">
+            <div class="flex justify-between text-xs text-slate-400 mb-1.5">
+              <span>Прогресс разработки</span>
+              <span>??%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 50%;"></div>
+            </div>
+          </div>
+          <div class="game-stats">
+            <div class="stat">
+              <i class="fas fa-mobile platform-icon"></i>
+              <span class="stat-value">Android</span> платформа
+            </div>
+            <div class="stat">
+              <i class="fas fa-download platform-icon"></i>
+              <span class="stat-value">10K+</span> загрузок
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+    <div class="section-divider"></div>
+    <!-- About / Technologies -->
+    <section id="about" class="mb-28 fade-in">
+      <h3 class="section-title text-3xl font-bold bg-gradient-to-r from-slate-100 to-neon-orange bg-clip-text text-transparent mb-2 text-center">Технологии и подход</h3> 
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div class="bg-gradient-to-br from-ui-dark/50 to-ui-darker/70 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-slate-700/40 card-hover">
+          <h3 class="text-2xl font-bold text-slate-100 mb-6 flex items-center gap-3">
+            <i class="fas fa-crown text-neon-yellow"></i>
+            О моих проектах
+          </h3>
+          <p class="text-slate-300 mb-5">Каждая игра в этом портфолио представляет собой уникальный опыт разработки на Unity. Я уделяю особое внимание оптимизации WebGL-билдов для обеспечения плавного игрового процесса даже на устройствах со средними характеристиками.</p>
+          <p class="text-slate-300 mb-7">Мои ключевые принципы разработки:</p>
+          <ul class="space-y-4">
+            <li class="flex items-start gap-4">
+              <div class="mt-1 w-7 h-7 rounded-xl bg-orange-900/30 flex items-center justify-center border border-orange-500/30 flex-shrink-0">
+                <i class="fas fa-bolt text-neon-orange text-base"></i>
+              </div>
+              <span class="text-slate-300 font-medium">Оптимизация производительности для WebGL-сборок</span>
+            </li>
+            <li class="flex items-start gap-4">
+              <div class="mt-1 w-7 h-7 rounded-xl bg-orange-900/30 flex items-center justify-center border border-orange-500/30 flex-shrink-0">
+                <i class="fas fa-sync-alt text-neon-orange text-base"></i>
+              </div>
+              <span class="text-slate-300 font-medium">Кроссбраузерная совместимость и адаптивное управление</span>
+            </li>
+            <li class="flex items-start gap-4">
+              <div class="mt-1 w-7 h-7 rounded-xl bg-orange-900/30 flex items-center justify-center border border-orange-500/30 flex-shrink-0">
+                <i class="fas fa-palette text-neon-orange text-base"></i>
+              </div>
+              <span class="text-slate-300 font-medium">Уникальная визуальная стилистика и детализированный геймдизайн</span>
+            </li>
+            <li class="flex items-start gap-4">
+              <div class="mt-1 w-7 h-7 rounded-xl bg-orange-900/30 flex items-center justify-center border border-orange-500/30 flex-shrink-0">
+                <i class="fas fa-music text-neon-orange text-base"></i>
+              </div>
+              <span class="text-slate-300 font-medium">Качественное звуковое сопровождение для погружения в игровой мир</span>
+            </li>
+          </ul>
+        </div>
+        <div class="bg-gradient-to-br from-ui-dark/50 to-ui-darker/70 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-slate-700/40 card-hover">
+          <h3 class="text-2xl font-bold text-slate-100 mb-6 flex items-center gap-3">
+            <i class="fas fa-tools text-neon-purple"></i>
+            Используемые технологии
+          </h3>
+          <div class="grid grid-cols-2 gap-6 mb-8">
+            <div class="feature-card p-6">
+              <div class="text-neon-purple text-3xl mb-3">
+                <i class="fas fa-cube"></i>
+              </div>
+              <h4 class="font-bold text-slate-100 mb-1 text-lg">Unity</h4>
+              <p class="text-slate-400">2022 - 6000 LTS версии</p>
+              <p class="text-xs text-neon-purple/80 mt-2">Оптимизация WebGL-билдов</p>
+            </div>
+            <div class="feature-card p-6">
+              <div class="text-neon-orange text-3xl mb-3">
+                <i class="fas fa-code"></i>
+              </div>
+              <h4 class="font-bold text-slate-100 mb-1 text-lg">C#</h4>
+              <p class="text-slate-400">Скриптинг и архитектура</p>
+              <p class="text-xs text-neon-orange/80 mt-2">Чистый и эффективный код</p>
+            </div>
+            <div class="feature-card p-6">
+              <div class="text-neon-green text-3xl mb-3">
+                <i class="fas fa-brush"></i>
+              </div>
+              <h4 class="font-bold text-slate-100 mb-1 text-lg">Shader Graph</h4>
+              <p class="text-slate-400">Визуальные эффекты</p>
+              <p class="text-xs text-neon-green/80 mt-2">Кастомные визуальные эффекты</p>
+            </div>
+            <div class="feature-card p-6">
+              <div class="text-neon-blue text-3xl mb-3">
+                <i class="fas fa-server"></i>
+              </div>
+              <h4 class="font-bold text-slate-100 mb-1 text-lg">Git</h4>
+              <p class="text-slate-400">Контроль версии</p>
+              <p class="text-xs text-neon-blue/80 mt-2">Плавный FPS на всех устройствах</p>
+            </div>
+          </div>
+          <div class="mt-6 pt-6 border-t border-slate-800">
+            <h4 class="font-bold text-slate-100 mb-3">Практики разработки</h4>
+            <div class="flex flex-wrap gap-2">
+              <span class="badge technology-badge">Тестирование</span>
+              <span class="badge technology-badge">Профилирование</span>
+              <span class="badge technology-badge">Оптимизация</span>
+              <span class="badge technology-badge">CI/CD</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- Contact -->
+    <section id="contact" class="mb-20 fade-in">
+      <div class="text-center mb-12">
+        <h3 class="section-title text-3xl font-bold bg-gradient-to-r from-slate-100 to-neon-orange bg-clip-text text-transparent mb-3">Сотрудничество</h3>
+        <p class="text-slate-400 max-w-2xl mx-auto">Готов к новым проектам и интересным задачам. Свяжитесь со мной любым удобным способом.</p>
+      </div>
+      <div class="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+        <a href="https://github.com/kuatov2002" target="_blank" class="contact-card bg-gradient-to-br from-ui-dark/60 to-ui-darker/80 backdrop-blur-sm rounded-2xl p-8 flex flex-col items-center text-center border border-slate-700/40 hover:border-neon-purple/40">
+          <div class="relative mb-6">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-900/50 to-indigo-900/50 flex items-center justify-center">
+              <i class="fab fa-github text-neon-purple text-3xl"></i>
+            </div>
+            <div class="absolute -inset-1 bg-purple-500 rounded-2xl opacity-20 blur-xl"></div>
+          </div>
+          <h4 class="font-bold text-xl text-slate-100 mb-2">GitHub</h4>
+          <p class="text-slate-400 mb-3">Посмотрите мои проекты и репозитории</p>
+          <span class="text-neon-purple font-medium hover:text-purple-300 transition-colors">github.com/kuatov2002</span>
+        </a>
+        <a href="mailto:Channelgamer58@gmail.com" class="contact-card bg-gradient-to-br from-ui-dark/60 to-ui-darker/80 backdrop-blur-sm rounded-2xl p-8 flex flex-col items-center text-center border border-slate-700/40 hover:border-neon-orange/40">
+          <div class="relative mb-6">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-900/50 to-yellow-900/50 flex items-center justify-center">
+              <i class="fas fa-envelope text-neon-orange text-3xl"></i>
+            </div>
+            <div class="absolute -inset-1 bg-orange-500 rounded-2xl opacity-20 blur-xl"></div>
+          </div>
+          <h4 class="font-bold text-xl text-slate-100 mb-2">Email</h4>
+          <p class="text-slate-400 mb-3">Для деловых предложений и вопросов</p>
+          <span class="text-neon-orange font-medium hover:text-orange-300 transition-colors break-all">Channelgamer58@gmail.com</span>
+        </a>
+        <a href="https://www.linkedin.com/in/alikhankuatov/" target="_blank" class="contact-card bg-gradient-to-br from-ui-dark/60 to-ui-darker/80 backdrop-blur-sm rounded-2xl p-8 flex flex-col items-center text-center border border-slate-700/40 hover:border-neon-blue/40">
+          <div class="relative mb-6">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-900/50 to-cyan-900/50 flex items-center justify-center">
+              <i class="fab fa-linkedin-in text-neon-blue text-3xl"></i>
+            </div>
+            <div class="absolute -inset-1 bg-blue-500 rounded-2xl opacity-20 blur-xl"></div>
+          </div>
+          <h4 class="font-bold text-xl text-slate-100 mb-2">LinkedIn</h4>
+          <p class="text-slate-400 mb-3">Профессиональные контакты и опыт</p>
+          <span class="text-neon-blue font-medium hover:text-blue-300 transition-colors">linkedin.com/in/alikhankuatov/</span>
+        </a>
+      </div>
+    </section>
+  </main>
+  <footer class="bg-gradient-to-t from-ui-darker/95 to-ui-dark/80 border-t border-slate-800/60 pt-16 pb-10 backdrop-blur-xl">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-10">
+        <div class="fade-in">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-neon-purple to-neon-orange flex items-center justify-center text-white font-bold text-xl shadow-[0_0_20px_rgba(108,92,231,0.5)] border border-purple-500/30">
+              <span class="font-bold text-xl"><i class="fas fa-gamepad"></i></span>
+            </div>
+            <div class="text-xl font-bold bg-gradient-to-r from-slate-100 to-neon-orange bg-clip-text text-transparent">Алихан</div>
+          </div>
+          <p class="text-slate-400 mb-6 pr-4">Создание захватывающих игровых опытов с использованием современных технологий разработки игр. Каждый проект — это история, рассказанная через геймплей.</p>
+        </div>
+        <div class="fade-in">
+          <h4 class="text-white font-bold text-lg mb-5 flex items-center gap-2">
+            <i class="fas fa-user-ninja text-neon-green"></i>
+            Кратко обо мне
+          </h4>
+          <ul class="space-y-3">
+            <li class="flex items-start gap-3">
+              <i class="fas fa-gamepad text-neon-orange mt-1 flex-shrink-0"></i>
+              <span class="text-slate-300">Разработчик игр на Unity с опытом более 2 лет</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <i class="fas fa-lightbulb text-neon-purple mt-1 flex-shrink-0"></i>
+              <span class="text-slate-300">Опыт работы с шейдерами и визуальными эффектами</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <i class="fas fa-graduation-cap text-neon-blue mt-1 flex-shrink-0"></i>
+              <span class="text-slate-300">Образование в области разработки игр</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <i class="fas fa-trophy text-neon-yellow mt-1 flex-shrink-0"></i>
+              <span class="text-slate-300">Участие в игровых джемах и конкурсах</span>
+            </li>
+          </ul>
+        </div>
+        <div class="fade-in">
+          <h4 class="text-white font-bold text-lg mb-5 flex items-center gap-2">
+            <i class="fas fa-headset text-neon-blue"></i>
+            Контакты
+          </h4>
+          <ul class="space-y-4">
+            <li class="flex items-start gap-3">
+              <div class="mt-1 p-2 bg-purple-900/30 rounded-xl text-neon-purple flex-shrink-0">
+                <i class="fas fa-envelope"></i>
+              </div>
+              <div>
+                <p class="text-sm text-slate-500">Email</p>
+                <a href="mailto:Channelgamer58@gmail.com" class="text-slate-300 hover:text-neon-purple transition-colors break-words">Channelgamer58@gmail.com</a>
+              </div>
+            </li>
+            <li class="flex items-start gap-3">
+              <div class="mt-1 p-2 bg-purple-900/30 rounded-xl text-neon-purple flex-shrink-0">
+                <i class="fab fa-github"></i>
+              </div>
+              <div>
+                <p class="text-sm text-slate-500">GitHub</p>
+                <a href="https://github.com/kuatov2002" target="_blank" class="text-slate-300 hover:text-neon-purple transition-colors">github.com/kuatov2002</a>
+              </div>
+            </li>
+            <li class="flex items-start gap-3">
+              <div class="mt-1 p-2 bg-purple-900/30 rounded-xl text-neon-purple flex-shrink-0">
+                <i class="fab fa-linkedin-in"></i>
+              </div>
+              <div>
+                <p class="text-sm text-slate-500">LinkedIn</p>
+                <a href="https://www.linkedin.com/in/alikhankuatov/" target="_blank" class="text-slate-300 hover:text-neon-purple transition-colors">linkedin.com/in/alikhankuatov/</a>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <div class="fade-in">
+          <h4 class="text-white font-bold text-lg mb-5 flex items-center gap-2">
+            <i class="fas fa-code text-neon-green"></i>
+            Навыки
+          </h4>
+          <div class="flex flex-wrap gap-2 mb-6">
+            <span class="badge technology-badge">Unity</span>
+            <span class="badge technology-badge">C#</span>
+            <span class="badge technology-badge">Shader Graph</span>
+            <span class="badge technology-badge">Git</span>
+          </div>
+          <h4 class="text-white font-bold text-lg mb-3 flex items-center gap-2">
+            <i class="fas fa-gamepad text-neon-orange"></i>
+            Любимые игры
+          </h4>
+          <ul class="space-y-2 text-slate-300 text-sm">
+            <li class="flex items-center gap-2">
+              <i class="fas fa-arrow-right text-neon-orange text-xs"></i>
+              <span>NieR: Automata</span>
+            </li>
+            <li class="flex items-center gap-2">
+              <i class="fas fa-arrow-right text-neon-orange text-xs"></i>
+              <span>Hollow Knight</span>
+            </li>
+            <li class="flex items-center gap-2">
+              <i class="fas fa-arrow-right text-neon-orange text-xs"></i>
+              <span>Celeste</span>
+            </li>
+            <li class="flex items-center gap-2">
+              <i class="fas fa-arrow-right text-neon-orange text-xs"></i>
+              <span>Dead Cells</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="border-t border-slate-800/50 mt-12 pt-8 text-center text-slate-500 text-sm fade-in">
+        <p class="pixel-text">GAME OVER</p>
+        <p>© <span id="currentYear"></span> Алихан — Портфолио WebGL-игр. Все права защищены.</p>
+        <p class="text-slate-600 mt-1">Создано с любовью к игровой разработке</p>
+      </div>
+    </div>
+  </footer>
+  <!-- Modal для игры -->
+  <div id="gameModal" class="fixed inset-0 hidden items-center justify-center modal-bg z-[100] opacity-0 pointer-events-none">
+    <div class="modal-content bg-ui-dark/80 backdrop-blur-2xl rounded-2xl overflow-hidden w-[92vw] h-[86vh] md:w-[1100px] md:h-[680px] shadow-2xl flex flex-col border border-slate-700/50 transform scale-95 transition-all duration-300">
+      <div class="p-5 flex items-center justify-between border-b border-slate-700/50 bg-ui-darker/60 backdrop-blur-xl">
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-neon-purple to-neon-blue flex items-center justify-center text-white border border-purple-500/30 shadow-[0_0_15px_rgba(108,92,231,0.5)]">
+            <i class="fas fa-gamepad text-base"></i>
+          </div>
+          <h3 class="font-bold text-xl text-slate-100" id="modalGameTitle">Игра</h3>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2 text-sm">
+            <div class="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+            <span class="text-neon-green font-medium">Активна</span>
+          </div>
+          <a id="openNewTab" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ui-darker/60 border border-slate-700/50 text-sm font-medium text-neon-purple hover:text-purple-300 hover:border-neon-purple/30 transition-all duration-200" href="#" target="_blank">
+            <i class="fas fa-expand"></i> Полный экран
+          </a>
+          <button id="closeModal" class="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors duration-200" title="Закрыть игру">
+            <i class="fas fa-times text-lg"></i>
+          </button>
+        </div>
+      </div>
+      <div class="flex-1 bg-ui-darker relative">
+        <div class="absolute inset-0 flex items-center justify-center z-10" id="loadingOverlay">
+          <div class="text-center px-6">
+            <div class="relative">
+              <div class="loader mb-6 mx-auto"></div>
+              <div class="pulse-ring absolute inset-0 rounded-full"></div>
+            </div>
+            <p class="text-neon-orange font-bold text-xl mb-2">Загрузка игры</p>
+            <p class="text-slate-400 max-w-md">Пожалуйста, подождите. Игра загружается в ваш браузер. Это может занять до 30 секунд в зависимости от скорости вашего интернета.</p>
+            <div class="mt-6 h-1.5 w-48 bg-ui-dark rounded-full overflow-hidden mx-auto">
+              <div class="h-full bg-gradient-to-r from-neon-orange to-neon-purple rounded-full animate-pulse-slow"></div>
+            </div>
+          </div>
+        </div>
+        <iframe id="gameFrame" class="game-iframe" src="about:blank" allow="autoplay; fullscreen; accelerometer; gyroscope; xr-spatial-tracking" allowfullscreen></iframe>
+      </div>
+      <div class="p-4 bg-ui-darker/60 border-t border-slate-700/50 text-xs text-slate-400 backdrop-blur-sm">
+        <p class="flex items-center justify-center gap-2">
+          <i class="fas fa-keyboard text-neon-orange"></i>
+          <span>Для выхода из полноэкранного режима нажмите ESC. Используйте клавиатуру и мышь для управления.</span>
+        </p>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Добавление игровых элементов на фон
+    function createGameElements() {
+      const container = document.body;
+      const elementCount = 25;
+      
+      for (let i = 0; i < elementCount; i++) {
+        const element = document.createElement('div');
+        const type = Math.floor(Math.random() * 3);
+        
+        element.classList.add('game-element');
+        
+        if (type === 0) {
+          element.classList.add('star');
+        } else if (type === 1) {
+          element.classList.add('coin');
+        } else {
+          element.classList.add('powerup');
+        }
+        
+        // Случайное позиционирование
+        const posX = Math.random() * 100;
+        const posY = Math.random() * 100;
+        const size = 4 + Math.random() * 16;
+        const duration = 15 + Math.random() * 30;
+        
+        element.style.left = `${posX}%`;
+        element.style.top = `${posY}%`;
+        element.style.width = `${size}px`;
+        element.style.height = `${size}px`;
+        element.style.animationDuration = `${duration}s`;
+        element.style.animationDelay = `${Math.random() * 10}s`;
+        
+        container.appendChild(element);
+      }
+    }
+    
+    // Анимация плавного появления при прокрутке
+    function setupScrollAnimations() {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('appear');
+          }
+        });
+      }, {
+        threshold: 0.1
+      });
+      document.querySelectorAll('.fade-in').forEach(element => {
+        observer.observe(element);
+      });
+    }
+    
+    // Автоматически установить текущий год в футере
+    document.getElementById('currentYear').textContent = new Date().getFullYear();
+    
+    // Отслеживание прокрутки для изменения стиля хедера
+    window.addEventListener('scroll', () => {
+      const header = document.querySelector('header');
+      if (window.scrollY > 10) {
+        header.classList.add('scrolled');
+      } else {
+        header.classList.remove('scrolled');
+      }
+    });
+    
+    // JS: открытие модалки и загрузка iframe
+    const modal = document.getElementById('gameModal');
+    const frame = document.getElementById('gameFrame');
+    const openNewTab = document.getElementById('openNewTab');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const modalGameTitle = document.getElementById('modalGameTitle');
+    
+    // Список игр для отображения в модальном окне
+    const gameTitles = {
+      "/PortfolioGame1/index.html": "Dungeon Delver",
+      "/PortfolioGame2/index.html": "Neo Circuit",
+      "/PortfolioGame3/index.html": "Mind Forge"
+    };
+    
+    document.querySelectorAll('.play-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const src = btn.getAttribute('data-src');
+        const gameName = btn.closest('.game-card').querySelector('h4').textContent;
+        // Безопасная проверка: если пустой, ничего не делаем
+        if (!src) return alert('Путь к билду не указан');
+        // Показать загрузку
+        loadingOverlay.classList.remove('hidden');
+        // Установить название игры в модальном окне
+        modalGameTitle.textContent = gameTitles[src] || gameName;
+        // Загрузить iframe после небольшой задержки для плавной анимации
+        setTimeout(() => {
+          frame.src = src;
+          openNewTab.href = src;
+          // Показать модальное окно с анимацией
+          modal.classList.remove('hidden', 'pointer-events-none');
+          setTimeout(() => {
+            modal.style.opacity = '1';
+            document.querySelector('.modal-content').style.transform = 'scale(1)';
+            document.body.style.overflow = 'hidden';
+          }, 10);
+          // Скрыть индикатор загрузки после загрузки фрейма
+          frame.onload = function() {
+            setTimeout(() => {
+              loadingOverlay.classList.add('hidden');
+            }, 800);
+          };
+          // Обработка ошибок загрузки
+          frame.onerror = function() {
+            loadingOverlay.innerHTML = `
+              <div class="text-center px-6">
+                <div class="text-red-500 text-4xl mb-4">
+                  <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <p class="text-red-400 font-bold text-xl mb-2">Ошибка загрузки</p>
+                <p class="text-slate-400 max-w-md mb-4">Не удалось загрузить игру. Попробуйте обновить страницу или открыть игру в новой вкладке.</p>
+                <button id="retryButton" class="px-6 py-3 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-500 transition-colors">
+                  Попробовать снова
+                </button>
+              </div>
+            `;
+            document.getElementById('retryButton').addEventListener('click', () => {
+              loadingOverlay.classList.remove('hidden');
+              frame.src = src;
+            });
+          };
+        }, 300);
+      });
+    });
+    
+    // Закрытие модального окна
+    document.getElementById('closeModal').addEventListener('click', () => {
+      // Разгружаем iframe, чтобы остановить игру
+      frame.src = 'about:blank';
+      // Анимация закрытия
+      modal.style.opacity = '0';
+      document.querySelector('.modal-content').style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+        loadingOverlay.classList.remove('hidden');
+      }, 300);
+    });
+    
+    // Закрыть по Esc
+    window.addEventListener('keydown', (e) => { 
+      if (e.key === 'Escape') { 
+        document.getElementById('closeModal').click(); 
+      } 
+    });
+    
+    // Закрыть при клике на фон
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        document.getElementById('closeModal').click();
+      }
+    });
+    
+    // Мобильное меню
+    document.getElementById('openMenu').addEventListener('click', () => {
+      // В реальном проекте здесь было бы полноценное мобильное меню
+      const menuItems = [
+        { text: 'Игры', href: '#games' },
+        { text: 'О проектах', href: '#about' },
+        { text: 'Контакты', href: '#contact' }
+      ];
+      let menuHTML = `
+        <div class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div class="bg-gradient-to-br from-ui-dark/90 to-ui-darker/95 backdrop-blur-xl rounded-2xl w-full max-w-md max-h-[90vh] overflow-hidden border border-slate-700/50 shadow-2xl animate-scale-in">
+            <div class="p-6">
+              <div class="flex justify-between items-center mb-8">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-neon-purple to-neon-orange flex items-center justify-center text-white font-bold border border-purple-500/30">
+                    <i class="fas fa-gamepad"></i>
+                  </div>
+                  <h3 class="text-xl font-bold text-slate-100">Меню</h3>
+                </div>
+                <button id="closeMobileMenu" class="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors">
+                  <i class="fas fa-times text-lg"></i>
+                </button>
+              </div>
+              <nav class="space-y-3">
+      `;
+      menuItems.forEach(item => {
+        menuHTML += `
+          <a href="${item.href}" class="block py-4 px-5 rounded-xl text-slate-300 font-medium hover:bg-ui-dark/50 hover:text-neon-orange transition-colors border border-transparent hover:border-neon-orange/30 group">
+            <div class="flex items-center justify-between">
+              <span class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-orange-900/30 flex items-center justify-center text-neon-orange">
+                  <i class="fas fa-chevron-right text-sm"></i>
+                </div>
+                ${item.text}
+              </span>
+              <i class="fas fa-arrow-right text-slate-600 group-hover:text-neon-orange transition-colors"></i>
+            </div>
+          </a>
+        `;
+      });
+      menuHTML += `
+              </nav>
+              <div class="mt-10 pt-8 border-t border-slate-800/50">
+                <div class="flex flex-col sm:flex-row gap-3">
+                  <a href="mailto:Channelgamer58@gmail.com" class="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-orange-600 to-orange-700 text-white font-medium text-center hover:opacity-90 transition-opacity">
+                    <i class="fas fa-envelope mr-2"></i> Написать
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', menuHTML);
+      // Закрытие меню
+      document.getElementById('closeMobileMenu').addEventListener('click', function() {
+        this.closest('.fixed').remove();
+      });
+      // Закрытие при клике на ссылку
+      document.querySelectorAll('.fixed a').forEach(el => {
+        el.addEventListener('click', function(e) {
+          // Не закрывать меню при клике на внешние ссылки
+          if (this.getAttribute('target') === '_blank') return;
+          document.querySelector('.fixed').remove();
+        });
+      });
+    });
+    
+    // Функция поиска игр
+    document.getElementById('gameSearch').addEventListener('input', function(e) {
+      const searchTerm = e.target.value.toLowerCase().trim();
+      const gameCards = document.querySelectorAll('.game-card');
+      gameCards.forEach(card => {
+        const title = card.querySelector('h4').textContent.toLowerCase();
+        const description = card.querySelector('p').textContent.toLowerCase();
+        const badges = Array.from(card.querySelectorAll('.badge')).map(b => b.textContent.toLowerCase());
+        const matchesSearch = 
+          title.includes(searchTerm) || 
+          description.includes(searchTerm) || 
+          badges.some(b => b.includes(searchTerm));
+        if (matchesSearch || searchTerm === '') {
+          card.style.display = 'flex';
+          if (searchTerm !== '') {
+            card.style.animation = 'level-up 0.5s';
+          }
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+    
+    // Инициализация при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+      // Рассчитываем возраст от 11 июня 2002 года
+      const birthDate = new Date(2002, 5, 11); // Месяцы в JS начинаются с 0 (0 = январь, 5 = июнь)
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      const dayDiff = today.getDate() - birthDate.getDate();
+
+      // Если день рождения еще не наступил в этом году, уменьшаем возраст на 1
+      if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+        age--;
+      }
+
+      // Обновляем элемент с возрастом
+      document.getElementById('ageLevel').textContent = `Level ${age}`;
+
+      // Создание игровых элементов
+      createGameElements();
+      
+      // Настройка анимаций при прокрутке
+      setupScrollAnimations();
+      
+      // Анимация появления карточек
+      const gameCards = document.querySelectorAll('.game-card');
+      gameCards.forEach((card, index) => {
+        // Сброс для повторной анимации
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+          card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+          card.style.opacity = '1';
+          card.style.transform = 'translateY(0)';
+        }, 400 + index * 150);
+      });
+    });
+    
+    // Анимация для кнопок при наведении
+    document.querySelectorAll('.button-primary').forEach(button => {
+      button.addEventListener('mouseenter', () => {
+        button.style.setProperty('--glow-intensity', '1');
+      });
+      button.addEventListener('mouseleave', () => {
+        button.style.setProperty('--glow-intensity', '0.7');
+      });
+    });
+    
+    // Плавная прокрутка для внутренних ссылок
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        const targetId = this.getAttribute('href');
+        if (targetId === '#') return;
+        const targetElement = document.querySelector(targetId);
+        if (targetElement) {
+          window.scrollTo({
+            top: targetElement.offsetTop - 80,
+            behavior: 'smooth'
+          });
+          // Закрыть мобильное меню если оно открыто
+          const mobileMenu = document.querySelector('.fixed');
+          if (mobileMenu) mobileMenu.remove();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
